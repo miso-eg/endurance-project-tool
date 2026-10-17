@@ -209,7 +209,9 @@ $('download').addEventListener('click',async()=>{
   if(!blob)throw new Error('画像の生成に失敗しました。もう一度お試しください。');
   if(outputUrl)URL.revokeObjectURL(outputUrl);
   outputUrl=URL.createObjectURL(blob);
-  const filename=`都道府県耐久_${selected.size}of47_${canvas.width}x${canvas.height}.png`;
+  const now=new Date();
+  const pad=value=>String(value).padStart(2,'0');
+  const filename=`都道府県耐久_${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
   outputFile=typeof File==='function'?new File([blob],filename,{type:'image/png'}):null;
   $('output-image').src=outputUrl;$('save-image').href=outputUrl;$('save-image').download=filename;
   let canShare=false;try{canShare=!!(outputFile&&navigator.share&&navigator.canShare?.({files:[outputFile]}));}catch{}
