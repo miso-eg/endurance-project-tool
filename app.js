@@ -119,6 +119,22 @@ $('all').addEventListener('click',()=>{for(const name of PREFECTURES)state.count
 $('clear').addEventListener('click',()=>{if(!window.confirm('達成状況をリセットしますか？\n47都道府県すべての人数が0になります。\nカウント条件や画像などの設定は保持されます。'))return;state.counts={};update();renderRegions();$('status').textContent='達成状況をリセットしました。';});
 function update(){selected=new Set(PREFECTURES.filter(name=>countOf(name)>=state.target));state.version=3;try{localStorage.setItem('endurance-board-v3',JSON.stringify(state));}catch{$('status').textContent='ブラウザーの保存領域を利用できません。画像の保存はできます。';}$('selected-count').textContent=`${selected.size} / 47`;draw();}
 const canvas=$('board');const ctx=canvas.getContext('2d');
+let cropSession=null;
+function clampCrop(session){const factor=session.base*session.zoom;const limitX=Math.max(0,(session.image.naturalWidth*factor-360)/2),limitY=Math.max(0,(session.image.naturalHeight*factor-360)/2);session.x=Math.max(-limitX,Math.min(limitX,session.x));session.y=Math.max(-limitY,Math.min(limitY,session.y));}
+function paintCrop(){if(!cropSession)return;clampCrop(cropSession);const c=$('crop-canvas'),g=c.getContext('2d'),s=cropSession,f=s.base*s.zoom;g.clearRect(0,0,360,360);g.drawImage(s.image,180-s.image.naturalWidth*f/2+s.x,180-s.image.naturalHeight*f/2+s.y,s.image.naturalWidth*f,s.image.naturalHeight*f);}
+function cropImage(image){return new Promise(resolve=>{cropSession={image,resolve,base:Math.max(360/image.naturalWidth,360/image.naturalHeight),zoom:1,x:0,y:0};$('crop-zoom').value=1;$('crop-dialog').showModal();paintCrop();});}
+function finishCrop(data){if(!cropSession)return;const resolve=cropSession.resolve;cropSession=null;$('crop-dialog').close();resolve(data);}
+$('crop-zoom').addEventListener('input',()=>{if(!cropSession)return;const next=Number($('crop-zoom').value),ratio=next/cropSession.zoom;cropSession.x*=ratio;cropSession.y*=ratio;cropSession.zoom=next;paintCrop();});
+$('crop-reset').addEventListener('click',()=>{if(!cropSession)return;cropSession.x=cropSession.y=0;cropSession.zoom=1;$('crop-zoom').value=1;paintCrop();});
+for(const [id,dx,dy] of [['crop-left',-10,0],['crop-right',10,0],['crop-up',0,-10],['crop-down',0,10]])$(id).addEventListener('click',()=>{if(!cropSession)return;cropSession.x+=dx;cropSession.y+=dy;paintCrop();});
+let cropDrag=null;
+$('crop-canvas').addEventListener('pointerdown',event=>{if(!cropSession)return;cropDrag={id:event.pointerId,x:event.clientX,y:event.clientY};$('crop-canvas').setPointerCapture(event.pointerId);});
+$('crop-canvas').addEventListener('pointermove',event=>{if(!cropDrag||!cropSession||cropDrag.id!==event.pointerId)return;const scale=360/$('crop-canvas').getBoundingClientRect().width;cropSession.x+=(event.clientX-cropDrag.x)*scale;cropSession.y+=(event.clientY-cropDrag.y)*scale;cropDrag.x=event.clientX;cropDrag.y=event.clientY;paintCrop();});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])$('crop-canvas').addEventListener(type,()=>{cropDrag=null;});
+$('crop-apply').addEventListener('click',()=>{if(!cropSession)return;paintCrop();const output=document.createElement('canvas');output.width=output.height=128;output.getContext('2d').drawImage($('crop-canvas'),0,0,128,128);finishCrop(output.toDataURL('image/png'));});
+$('crop-cancel').addEventListener('click',()=>finishCrop(null));
+$('crop-dialog').addEventListener('cancel',event=>{event.preventDefault();finishCrop(null);});
+$('crop-dialog').addEventListener('close',()=>{if(cropSession){const resolve=cropSession.resolve;cropSession=null;resolve(null);}cropDrag=null;});
 const giftImages={rescue:null,obstacle:null};
 const giftImageRequests={rescue:0,obstacle:0};
 function decodeGiftImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('画像を読み込めませんでした。'));img.src=src;});}
@@ -131,9 +147,7 @@ for(const kind of ['rescue','obstacle']){
    if(file.size>20*1024*1024)throw new Error('20MB以下の画像を選んでください。');
    const url=URL.createObjectURL(file);let image;try{image=await decodeGiftImage(url);}finally{URL.revokeObjectURL(url);}
    if(request!==giftImageRequests[kind])return;
-   const temp=document.createElement('canvas');temp.width=temp.height=128;const ratio=Math.min(128/image.naturalWidth,128/image.naturalHeight);
-   temp.getContext('2d').drawImage(image,(128-image.naturalWidth*ratio)/2,(128-image.naturalHeight*ratio)/2,image.naturalWidth*ratio,image.naturalHeight*ratio);
-   const data=temp.toDataURL('image/png'),normalized=await decodeGiftImage(data);if(request!==giftImageRequests[kind])return;
+   const data=await cropImage(image);if(!data){$(kind+'-image').value='';return;}const normalized=await decodeGiftImage(data);if(request!==giftImageRequests[kind])return;
    state[kind+'Image']=data;giftImages[kind]=normalized;update();$(kind+'-image-status').textContent='設定した画像を使用しています。';
   }catch(error){if(request===giftImageRequests[kind])$(kind+'-image-status').textContent=error.message||'画像の設定に失敗しました。';}
   $(kind+'-image').value='';
@@ -172,8 +186,7 @@ $('condition-image').addEventListener('change',async()=>{
   const url=URL.createObjectURL(file);const image=new Image();
   try{await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('画像を読み込めませんでした。'));image.src=url;});}finally{URL.revokeObjectURL(url);}
   if(request!==imageRequest)return;
-  const temp=document.createElement('canvas');temp.width=temp.height=128;const ratio=Math.min(128/image.naturalWidth,128/image.naturalHeight);temp.getContext('2d').drawImage(image,(128-image.naturalWidth*ratio)/2,(128-image.naturalHeight*ratio)/2,image.naturalWidth*ratio,image.naturalHeight*ratio);
-  const data=temp.toDataURL('image/png');const normalized=new Image();await new Promise((resolve,reject)=>{normalized.onload=resolve;normalized.onerror=reject;normalized.src=data;});
+  const data=await cropImage(image);if(!data){$('condition-image').value='';return;}const normalized=await decodeGiftImage(data);
   if(request!==imageRequest)return;state.conditionImage=data;conditionImage=normalized;update();$('condition-image-status').textContent='設定した画像を使用しています。';
  }catch(error){if(request===imageRequest)$('condition-image-status').textContent=error.message||'画像の設定に失敗しました。';}
  $('condition-image').value='';
