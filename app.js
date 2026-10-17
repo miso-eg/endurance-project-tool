@@ -197,8 +197,26 @@ function text(value,x,y,size,color,weight='500',maxWidth){ctx.font=`${weight} ${
 function drawList(){const size={landscape:[1920,1080],square:[1600,1600],portrait:[1080,1920]}[state.size];[canvas.width,canvas.height]=size;const [w,h]=size;const [accent,pale,bg]=THEMES[state.theme];const portrait=state.size==='portrait',landscape=state.size==='landscape';const margin=portrait?60:80;ctx.clearRect(0,0,w,h);if(!state.transparent){ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);ctx.fillStyle=pale;ctx.beginPath();ctx.arc(w,0,w*.28,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(0,h,w*.18,0,Math.PI*2);ctx.fill();}ctx.textAlign='left';text('都道府県耐久',margin,margin+10,38,accent,'700');const headerWidth=w-margin*2-(landscape?390:0);drawOutcomeHeader(margin,margin+62,headerWidth);const conditionY=margin+82+outcomeRules().length*38;drawCondition(margin,conditionY,28,headerWidth);text(`各都道府県達成条件：各都道府県 ${state.target} 人`,margin,conditionY+48,26,'#334155','500',headerWidth);
 const badgeW=landscape?320:250;const bx=w-margin-badgeW;const by=landscape?margin:margin+210;rounded(bx,by,badgeW,landscape?160:110,20,'#ffffff',pale);ctx.textAlign='center';text(`${selected.size} / 47`,bx+badgeW/2,by+(landscape?60:42),landscape?55:42,accent,'800');text(selected.size===47?'全国制覇！':'都道府県 達成',bx+badgeW/2,by+(landscape?115:82),20,'#334155');ctx.textAlign='left';
 const progressY=landscape?margin+225:margin+350;rounded(margin,progressY,w-margin*2,9,4,pale);if(selected.size)rounded(margin,progressY,(w-margin*2)*selected.size/47,9,4,accent);
-let y=progressY+47;const cols=landscape?2:1;const gap=34;const groupW=(w-2*margin-gap*(cols-1))/cols;const bottom=h-Math.max(100,giftRulesHeight()+30);const rowCount=landscape?4:7;const groupH=(bottom-y)/rowCount;const columns=landscape?5:portrait?4:5;const cellGap=10;const cellW=(groupW-cellGap*(columns-1))/columns;const maxRows=Math.max(...REGIONS.map(region=>Math.ceil(region.items.length/columns)));const cellH=Math.min(landscape?58:portrait?62:67,(groupH-48-(maxRows-1)*cellGap)/maxRows);
-REGIONS.forEach((region,index)=>{const col=landscape?index%2:0;const row=landscape?Math.floor(index/2):index;const x=margin+col*(groupW+gap);const top=y+row*groupH;const count=region.items.filter(p=>selected.has(p)).length;text(region.name,x,top+8,landscape?20:portrait?22:24,'#263747','700');ctx.textAlign='right';text(`${count} / ${region.items.length}`,x+groupW,top+8,18,'#475569');ctx.textAlign='left';region.items.forEach((name,i)=>{const cx=x+(i%columns)*(cellW+cellGap);const cy=top+34+Math.floor(i/columns)*(cellH+10);const done=selected.has(name);rounded(cx,cy,cellW,cellH,10,done?accent:'#ffffff',done?null:'#8998a7');mapHits.push({name,rect:{x:cx,y:cy,w:cellW,h:cellH}});ctx.textAlign='center';text((done?'✓ ':'')+name,cx+cellW/2,cy+cellH*.30,Math.min(23,cellH*.39),done?'#ffffff':'#334155','700',cellW-14);text(`${countOf(name)} / ${state.target} 人`,cx+cellW/2,cy+cellH*.76,Math.min(17,cellH*.28),done?'#ffffff':'#334155','500',cellW-14);ctx.textAlign='left';});});
+const y=progressY+40,cols=landscape?2:1,gap=34;
+const groupW=(w-2*margin-gap*(cols-1))/cols,bottom=h-Math.max(100,giftRulesHeight()+30);
+const columns=landscape?5:portrait?4:5,cellGap=10,cellW=(groupW-cellGap*(columns-1))/columns;
+const bandCount=Math.ceil(REGIONS.length/cols),bandRows=[];
+for(let band=0;band<bandCount;band++)bandRows.push(Math.max(...REGIONS.slice(band*cols,band*cols+cols).map(region=>Math.ceil(region.items.length/columns))));
+const headingSpace=36,bandGap=12,totalRows=bandRows.reduce((sum,rows)=>sum+rows,0);
+const cellH=(bottom-y-bandCount*headingSpace-(bandCount-1)*bandGap-(totalRows-bandCount)*cellGap)/totalRows;
+const bandTops=[];let nextY=y;
+for(const rows of bandRows){bandTops.push(nextY);nextY+=headingSpace+rows*cellH+(rows-1)*cellGap+bandGap;}
+REGIONS.forEach((region,index)=>{
+ const x=margin+(index%cols)*(groupW+gap),top=bandTops[Math.floor(index/cols)];
+ const count=region.items.filter(name=>selected.has(name)).length;
+ text(region.name,x,top+8,22,'#263747','700');ctx.textAlign='right';text(`${count} / ${region.items.length}`,x+groupW,top+8,18,'#475569');ctx.textAlign='left';
+ region.items.forEach((name,i)=>{
+  const cx=x+(i%columns)*(cellW+cellGap),cy=top+headingSpace+Math.floor(i/columns)*(cellH+cellGap),done=selected.has(name);
+  rounded(cx,cy,cellW,cellH,10,done?accent:'#ffffff',done?null:'#8998a7');mapHits.push({name,rect:{x:cx,y:cy,w:cellW,h:cellH}});
+  ctx.textAlign='center';text((done?'✓ ':'')+name,cx+cellW/2,cy+cellH*.30,portrait?20:22,done?'#ffffff':'#334155','700',cellW-14);
+  text(`${countOf(name)} / ${state.target} 人`,cx+cellW/2,cy+cellH*.76,16,done?'#ffffff':'#334155','500',cellW-14);ctx.textAlign='left';
+ });
+});
 ctx.textAlign='right';if(!giftRulesHeight())text(selected.size===47?'COMPLETE !':`あと ${47-selected.size} 都道府県`,w-margin,h-43,20,accent,'700');ctx.textAlign='left';drawGiftRules(w,h,state.size==='portrait'?60:80);$('dimensions').textContent=`${w} × ${h} px`;}
 let outputUrl=null;
 let outputFile=null;
