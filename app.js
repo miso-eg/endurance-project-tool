@@ -11,7 +11,7 @@ const ETO_SYMBOLS=['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵
 const MONTH_NAMES=Array.from({length:12},(_,i)=>`${i+1}月`);
 const MBTI_NAMES=['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
 const CYCLE_NAMES=IS_MBTI?MBTI_NAMES:IS_MONTH?MONTH_NAMES:IS_ETO?ETO_NAMES:ZODIAC_NAMES;
-const CYCLE_SYMBOLS=IS_MBTI?['NT','NT','NT','NT','NF','NF','NF','NF','SJ','SJ','SJ','SJ','SP','SP','SP','SP']:IS_MONTH?['🎍','🍫','🎎','🌸','🎏','☔','🎋','🎆','🌕','🎃','🍁','🎄']:IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS;
+const CYCLE_SYMBOLS=IS_MBTI?['♟️','🔬','👑','💡','🔮','🌼','📣','🎉','📋','🩺','🧭','🤝','🛠️','🎨','🚀','🎤']:IS_MONTH?['🎍','🍫','🎎','🌸','🎏','☔','🎋','🎆','🌕','🎃','🍁','🎄']:IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS;
 const CYCLE_TITLE=IS_MBTI?'16タイプ':IS_MONTH?'12か月':IS_ETO?'十二支':'12星座';
 const REGIONS = IS_CYCLE?[{name:CYCLE_TITLE,items:CYCLE_NAMES}]:[
  ['北海道・東北','北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県'],
