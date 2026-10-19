@@ -47,6 +47,7 @@ try{
   for(const name of PREFECTURES){if(saved.version>=3&&validCount(saved.counts?.[name]))state.counts[name]=Number(saved.counts[name]);else if(saved.version<3&&Array.isArray(saved.selected)&&saved.selected.includes(name))state.counts[name]=1;}
  }
 }catch{}
+if(IS_MBTI)state.layout='map';
 const countOf=name=>state.counts[name]||0;
 let selected=new Set(PREFECTURES.filter(name=>countOf(name)>=state.target));
 function changeCount(name,value){if(!validCount(value))return;state.counts[name]=Number(value);update();renderRegions();}
