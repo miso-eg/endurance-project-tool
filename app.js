@@ -305,7 +305,7 @@ function drawZodiacWheel(cx,cy,r,accent,pale){
  CYCLE_NAMES.forEach((name,i)=>{
   const start=-Math.PI/2+i*Math.PI*2/TOTAL,end=start+Math.PI*2/TOTAL,angle=(start+end)/2,done=selected.has(name);
   const path=new Path2D();path.arc(cx,cy,r,start+.008,end-.008);path.arc(cx,cy,inner,end-.008,start+.008,true);path.closePath();
-  ctx.fillStyle=done?accent:i%2===0?pale:'#ffffff';ctx.fill(path);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke(path);mapHits.push({name,path});
+  ctx.fillStyle=done?accent:'#ffffff';ctx.fill(path);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke(path);mapHits.push({name,path});
   const x=cx+Math.cos(angle)*r*.72,y=cy+Math.sin(angle)*r*.72;
   ctx.textAlign='center';text(CYCLE_SYMBOLS[i],x,y-r*.045,Math.max(23,r*.13),done?'#ffffff':accent,'700');
   text((done?'✓ ':'')+name,x,y+r*.09,Math.max(11,r*.047),done?'#ffffff':'#334155','700',r*.38);
