@@ -285,6 +285,20 @@ function draw(){
  ctx.textAlign='left';
  drawGiftRules(w,h,state.size==='portrait'?60:80);$('dimensions').textContent=`${w} × ${h} px`;
 }
+function drawZodiacWheel(cx,cy,r,accent,pale){
+ const inner=r*.42;
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,r+7,0,Math.PI*2);ctx.strokeStyle=accent;ctx.lineWidth=2;ctx.stroke();
+ ZODIAC_NAMES.forEach((name,i)=>{
+  const start=-Math.PI/2+i*Math.PI/6,end=start+Math.PI/6,angle=(start+end)/2,done=selected.has(name);
+  const path=new Path2D();path.arc(cx,cy,r,start+.008,end-.008);path.arc(cx,cy,inner,end-.008,start+.008,true);path.closePath();
+  ctx.fillStyle=done?accent:i%2===0?pale:'#ffffff';ctx.fill(path);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke(path);mapHits.push({name,path});
+  const x=cx+Math.cos(angle)*r*.72,y=cy+Math.sin(angle)*r*.72;
+  ctx.textAlign='center';text(ZODIAC_SYMBOLS[i],x,y-r*.045,Math.max(23,r*.13),done?'#ffffff':accent,'700');
+  text((done?'✓ ':'')+name,x,y+r*.09,Math.max(11,r*.047),done?'#ffffff':'#334155','700',r*.38);
+ });
+ ctx.textAlign='center';text('12星座',cx,cy-r*.08,r*.12,accent,'700');text(`${selected.size} / 12`,cx,cy+r*.09,r*.15,accent,'800');
+ ctx.beginPath();ctx.arc(cx,cy,inner*.88,0,Math.PI*2);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke();ctx.restore();ctx.textAlign='left';
+}
 function drawZodiac(){
  const [w,h]={portrait:[1080,1920],square:[1600,1600],landscape:[1920,1080]}[state.size];canvas.width=w;canvas.height=h;
  const [accent,pale,bg]=THEMES[state.theme],m=60,wide=state.size==='landscape',simple=state.layout==='list';
@@ -294,14 +308,22 @@ function drawZodiac(){
  text(`各星座達成条件：各星座 ${state.target} 人`,m,conditionY+48,26,'#334155','500',w-m*2);
  text(`${selected.size}`,m,315,64,accent,'800');text('/ 12 星座 達成',m+100,320,26,'#334155');ctx.textAlign='right';text(selected.size===12?'12星座コンプリート！':`あと ${12-selected.size} 星座`,w-m,320,28,accent,'700');ctx.textAlign='left';
  rounded(m,365,w-m*2,10,5,pale);if(selected.size)rounded(m,365,(w-m*2)*selected.size/12,10,5,accent);
- const cols=wide?6:state.size==='square'?4:3,rows=12/cols,gap=18,startY=410,bottom=h-Math.max(50,giftRulesHeight()+24),cw=(w-m*2-gap*(cols-1))/cols,ch=(bottom-startY-gap*(rows-1))/rows;
+ const bottom=h-Math.max(50,giftRulesHeight()+24),available=bottom-410;
+ let gridX=m,gridW=w-m*2,startY=410;
+ if(!simple){
+  const diameter=wide?Math.min(available-16,760):Math.min(760,available*.60);
+  const cx=wide?m+460:w/2,cy=410+diameter/2;
+  drawZodiacWheel(cx,cy,diameter/2,accent,pale);
+  if(wide){gridX=1030;gridW=w-gridX-m;}else startY=410+diameter+28;
+ }
+ const cols=wide?(simple?6:3):state.size==='square'?4:3,rows=12/cols,gap=14,cw=(gridW-gap*(cols-1))/cols,ch=(bottom-startY-gap*(rows-1))/rows;
  ZODIAC_NAMES.forEach((name,i)=>{
-  const x=m+(i%cols)*(cw+gap),y=startY+Math.floor(i/cols)*(ch+gap),done=selected.has(name);
+  const x=gridX+(i%cols)*(cw+gap),y=startY+Math.floor(i/cols)*(ch+gap),done=selected.has(name);
   rounded(x,y,cw,ch,18,done?accent:'#ffffff',done?null:'#8998a7');mapHits.push({name,rect:{x,y,w:cw,h:ch}});
   ctx.textAlign='center';const fg=done?'#ffffff':'#334155';
-  if(!simple){text(ZODIAC_SYMBOLS[i],x+cw/2,y+ch*.24,Math.min(76,ch*.25),done?'#ffffff':accent,'700',cw-24);}
-  text((done?'✓ ':'')+name,x+cw/2,y+ch*(simple?.35:.51),Math.min(32,ch*.15),fg,'700',cw-18);
-  text(`${countOf(name)} / ${state.target} 人`,x+cw/2,y+ch*(simple?.65:.72),Math.min(26,ch*.13),fg,'700',cw-18);
+  if(!simple&&ch>150){text(ZODIAC_SYMBOLS[i],x+cw/2,y+ch*.22,Math.min(54,ch*.24),done?'#ffffff':accent,'700',cw-24);}
+  text((done?'✓ ':'')+name,x+cw/2,y+ch*(!simple&&ch>150?.48:.32),Math.min(30,ch*.26),fg,'700',cw-18);
+  text(`${countOf(name)} / ${state.target} 人`,x+cw/2,y+ch*.68,Math.min(24,ch*.22),fg,'700',cw-18);
   const barY=y+ch*.88;rounded(x+18,barY,cw-36,6,3,done?'#ffffff55':pale);const rate=Math.min(1,countOf(name)/state.target);if(rate)rounded(x+18,barY,(cw-36)*rate,6,3,done?'#ffffff':accent);
  });
  ctx.textAlign='left';drawGiftRules(w,h,m);$('dimensions').textContent=`${w} × ${h} px`;
