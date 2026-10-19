@@ -49,6 +49,44 @@ try{
   for(const name of PREFECTURES){if(saved.version>=3&&validCount(saved.counts?.[name]))state.counts[name]=Number(saved.counts[name]);else if(saved.version<3&&Array.isArray(saved.selected)&&saved.selected.includes(name))state.counts[name]=1;}
  }
 }catch{}
+const SHARED_KEY='endurance-shared-settings-v1';
+const SHARED_FIELDS=['target','condition','conditionImage','successAction','failureAction','rescueEnabled','rescueGift','rescueImage','obstacleEnabled','obstacleGift','obstacleImage','theme','size','transparent'];
+function sharedValues(source){
+ const values={};if(!source||typeof source!=='object')return values;
+ for(const key of SHARED_FIELDS){const value=source[key];
+  if(key==='target'){if(validCount(value)&&Number(value)>=1)values[key]=Number(value);}
+  else if(key==='theme'){if(Object.hasOwn(THEMES,value))values[key]=value;}
+  else if(key==='size'){if(['portrait','square','landscape'].includes(value))values[key]=value;}
+  else if(['transparent','rescueEnabled','obstacleEnabled'].includes(key)){if(typeof value==='boolean')values[key]=value;}
+  else if(key.endsWith('Image')){if(typeof value==='string'&&(value===''||(/^data:image\/png;base64,/.test(value)&&value.length<200000)))values[key]=value;}
+  else if(typeof value==='string')values[key]=value.slice(0,key==='condition'?80:key.endsWith('Gift')?40:60);
+ }
+ return values;
+}
+function readShared(){return sharedValues(JSON.parse(localStorage.getItem(SHARED_KEY)||'null'));}
+try{Object.assign(state,readShared());}catch{}
+let sharedBaseline=sharedValues(state);
+// Only changed fields are written, so an older open tab cannot overwrite newer settings.
+function saveShared(){
+ const latest={...sharedBaseline,...readShared()};
+ for(const key of SHARED_FIELDS)if(state[key]!==sharedBaseline[key])latest[key]=state[key];
+ const changed=SHARED_FIELDS.filter(key=>state[key]!==latest[key]);
+ Object.assign(state,latest);sharedBaseline={...latest};
+ const serialized=JSON.stringify(latest);if(localStorage.getItem(SHARED_KEY)!==serialized)localStorage.setItem(SHARED_KEY,serialized);
+ return changed;
+}
+function refreshSharedControls(changed){
+ for(const id of ['theme','size','transparent','successAction','failureAction','target']){const element=$(id);if(element.type==='checkbox')element.checked=state[id];else element.value=state[id];}
+ $('condition-preset').value=presets.includes(state.condition)?state.condition:/^ギフト「.*」$/.test(state.condition)?'gift':'custom';syncConditionDetail();
+ for(const kind of ['rescue','obstacle']){$(kind+'Enabled').checked=state[kind+'Enabled'];$(kind+'Gift').value=state[kind+'Gift'];$(kind+'-fields').hidden=!state[kind+'Enabled'];
+  if(changed.includes(kind+'Image')){giftImageRequests[kind]++;giftImages[kind]=null;$(kind+'-image-status').textContent=state[kind+'Image']?'画像を読み込んでいます。':'画像は未設定です。';}}
+ if(changed.includes('conditionImage')){imageRequest++;conditionImage=null;$('condition-image-status').textContent=state.conditionImage?'画像を読み込んでいます。':'条件に合う標準アイコンを使用しています。';loadSavedConditionImage();}
+ if(changed.some(key=>key==='rescueImage'||key==='obstacleImage'))loadGiftImages();
+}
+window.addEventListener('storage',event=>{
+ if(event.key!==SHARED_KEY)return;
+ try{const incoming={...sharedBaseline,...readShared()},changed=SHARED_FIELDS.filter(key=>state[key]!==incoming[key]);Object.assign(state,incoming);sharedBaseline=sharedValues(state);refreshSharedControls(changed);update();renderRegions();}catch{}
+});
 if(IS_MBTI||IS_DAY)state.layout='map';
 const countOf=name=>state.counts[name]||0;
 let selected=new Set(PREFECTURES.filter(name=>countOf(name)>=state.target));
@@ -136,7 +174,7 @@ function renderRegions(){
 $('search').addEventListener('input',renderRegions);
 $('all').addEventListener('click',()=>{for(const name of PREFECTURES)state.counts[name]=Math.max(countOf(name),state.target);update();renderRegions();});
 $('clear').addEventListener('click',()=>{if(!window.confirm(`達成状況をリセットしますか？\n${TOTAL}${ITEM_LABEL}すべての人数が0になります。\nカウント条件や画像などの設定は保持されます。`))return;state.counts={};update();renderRegions();$('status').textContent='達成状況をリセットしました。';});
-function update(){selected=new Set(PREFECTURES.filter(name=>countOf(name)>=state.target));state.version=3;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{$('status').textContent='ブラウザーの保存領域を利用できません。画像の保存はできます。';}$('selected-count').textContent=`${selected.size} / ${TOTAL}`;draw();}
+function update(){state.version=3;let sharedChanged=[];try{sharedChanged=saveShared();if(sharedChanged.length)refreshSharedControls(sharedChanged);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{$('status').textContent='ブラウザーの保存領域を利用できません。画像の保存はできます。';}selected=new Set(PREFECTURES.filter(name=>countOf(name)>=state.target));if(sharedChanged.length)renderRegions();$('selected-count').textContent=`${selected.size} / ${TOTAL}`;draw();}
 const canvas=$('board');const ctx=canvas.getContext('2d');
 let cropSession=null;
 function clampCrop(session){const factor=session.base*session.zoom;const limitX=Math.max(0,(session.image.naturalWidth*factor-360)/2),limitY=Math.max(0,(session.image.naturalHeight*factor-360)/2);session.x=Math.max(-limitX,Math.min(limitX,session.x));session.y=Math.max(-limitY,Math.min(limitY,session.y));}
