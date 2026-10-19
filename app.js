@@ -317,7 +317,9 @@ function drawMbtiArt(index,x,y,size){
  // ENTP's left gutter contains overflow from the neighboring ENTJ flag.
  // Omit only that gutter, keeping the character's scale and position unchanged.
  const inset=index===3?.11:0;
- ctx.drawImage(mbtiArt,(index%4+inset)*sw,Math.floor(index/4)*sh,sw*(1-inset),sh,x-size/2+size*inset,y-size/2,size*(1-inset),size);
+ // Exclude only the top gutter where the preceding row's shoes spill over.
+ const topInset=[4,5,6,7].includes(index)?.035:index===10?.032:0;
+ ctx.drawImage(mbtiArt,(index%4+inset)*sw,(Math.floor(index/4)+topInset)*sh,sw*(1-inset),sh*(1-topInset),x-size/2+size*inset,y-size/2+size*topInset,size*(1-inset),size*(1-topInset));
 }
 function drawZodiac(){
  const [w,h]={portrait:[1080,1920],square:[1600,1600],landscape:[1920,1080]}[state.size];canvas.width=w;canvas.height=h;
