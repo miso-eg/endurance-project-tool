@@ -1,0 +1,5 @@
+Edit target: assets/mbti-original.png
+Built-in image_gen edit; transparent_background=true.
+Remove only the neighboring ENTJ red flag fragment intruding into the left edge of the ENTP sprite (row 1, column 4). Preserve the square transparent 4x4 atlas, character positions, style and all other characters. Keep ENTJ's own flag within its sprite.
+Output: assets/mbti-original-v2.png
+Renderer additionally excludes the ENTP cell's left 11% gutter, preserving scale and position, so neighboring flag pixels cannot appear.

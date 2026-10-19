@@ -311,8 +311,14 @@ function drawZodiacWheel(cx,cy,r,accent,pale){
  ctx.beginPath();ctx.arc(cx,cy,inner*.88,0,Math.PI*2);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke();ctx.restore();ctx.textAlign='left';
 }
 let mbtiArt=null;
-function loadMbtiArt(){if(!IS_MBTI)return;const img=new Image();img.onload=()=>{mbtiArt=img;draw();};img.onerror=()=>{$('status').textContent='イラストを読み込めませんでした。ページを再読み込みしてください。';};img.src='./assets/mbti-original.png';}
-function drawMbtiArt(index,x,y,size){if(!mbtiArt)return;const sw=mbtiArt.naturalWidth/4,sh=mbtiArt.naturalHeight/4;ctx.drawImage(mbtiArt,(index%4)*sw,Math.floor(index/4)*sh,sw,sh,x-size/2,y-size/2,size,size);}
+function loadMbtiArt(){if(!IS_MBTI)return;const img=new Image();img.onload=()=>{mbtiArt=img;draw();};img.onerror=()=>{$('status').textContent='イラストを読み込めませんでした。ページを再読み込みしてください。';};img.src='./assets/mbti-original-v2.png';}
+function drawMbtiArt(index,x,y,size){
+ if(!mbtiArt)return;const sw=mbtiArt.naturalWidth/4,sh=mbtiArt.naturalHeight/4;
+ // ENTP's left gutter contains overflow from the neighboring ENTJ flag.
+ // Omit only that gutter, keeping the character's scale and position unchanged.
+ const inset=index===3?.11:0;
+ ctx.drawImage(mbtiArt,(index%4+inset)*sw,Math.floor(index/4)*sh,sw*(1-inset),sh,x-size/2+size*inset,y-size/2,size*(1-inset),size);
+}
 function drawZodiac(){
  const [w,h]={portrait:[1080,1920],square:[1600,1600],landscape:[1920,1080]}[state.size];canvas.width=w;canvas.height=h;
  const [accent,pale,bg]=THEMES[state.theme],m=60,wide=state.size==='landscape',simple=state.layout==='list';
