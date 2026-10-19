@@ -11,7 +11,7 @@ const ETO_SYMBOLS=['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵
 const MONTH_NAMES=Array.from({length:12},(_,i)=>`${i+1}月`);
 const MBTI_NAMES=['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
 const CYCLE_NAMES=IS_MBTI?MBTI_NAMES:IS_MONTH?MONTH_NAMES:IS_ETO?ETO_NAMES:ZODIAC_NAMES;
-const CYCLE_SYMBOLS=IS_MBTI?['NT','NT','NT','NT','NF','NF','NF','NF','SJ','SJ','SJ','SJ','SP','SP','SP','SP']:IS_MONTH?MONTH_NAMES.map((_,i)=>String(i+1).padStart(2,'0')):IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS;
+const CYCLE_SYMBOLS=IS_MBTI?['NT','NT','NT','NT','NF','NF','NF','NF','SJ','SJ','SJ','SJ','SP','SP','SP','SP']:IS_MONTH?['🎍','🍫','🎎','🌸','🎏','☔','🎋','🎆','🌕','🎃','🍁','🎄']:IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS;
 const CYCLE_TITLE=IS_MBTI?'16タイプ':IS_MONTH?'12か月':IS_ETO?'十二支':'12星座';
 const REGIONS = IS_CYCLE?[{name:CYCLE_TITLE,items:CYCLE_NAMES}]:[
  ['北海道・東北','北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県'],
@@ -333,8 +333,8 @@ function drawZodiac(){
   const itemAccent=IS_MBTI?['#6732a0','#075c40','#1256a0','#9b460d'][Math.floor(i/4)]:accent;
   rounded(x,y,cw,ch,18,done?itemAccent:'#ffffff',done?null:IS_MBTI?itemAccent:'#8998a7');mapHits.push({name,rect:{x,y,w:cw,h:ch}});
   ctx.textAlign='center';const fg=done?'#ffffff':'#334155';
-  if(simple||IS_MBTI||ch>150){text(CYCLE_SYMBOLS[i],x+cw/2,y+ch*.22,Math.min(54,ch*.24),done?'#ffffff':itemAccent,'700',cw-24);}
-  text((done?'✓ ':'')+name,x+cw/2,y+ch*(simple||IS_MBTI||ch>150?.50:.32),Math.min(30,ch*.26),fg,'700',cw-18);
+  if(simple||IS_MBTI||IS_MONTH||ch>150){text(CYCLE_SYMBOLS[i],x+cw/2,y+ch*.22,Math.min(54,ch*.24),done?'#ffffff':itemAccent,'700',cw-24);}
+  text((done?'✓ ':'')+name,x+cw/2,y+ch*(simple||IS_MBTI||IS_MONTH||ch>150?.50:.32),Math.min(30,ch*.26),fg,'700',cw-18);
   text(`${countOf(name)} / ${state.target} 人`,x+cw/2,y+ch*.68,Math.min(24,ch*.22),fg,'700',cw-18);
   const barY=y+ch*.88;rounded(x+18,barY,cw-36,6,3,done?'#ffffff55':pale);const rate=Math.min(1,countOf(name)/state.target);if(rate)rounded(x+18,barY,(cw-36)*rate,6,3,done?'#ffffff':accent);
  });
