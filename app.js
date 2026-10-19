@@ -1,5 +1,8 @@
 'use strict';
-const REGIONS = [
+const IS_ZODIAC=document.body?.dataset?.project==='zodiac';
+const ZODIAC_NAMES=['おひつじ座','おうし座','ふたご座','かに座','しし座','おとめ座','てんびん座','さそり座','いて座','やぎ座','みずがめ座','うお座'];
+const ZODIAC_SYMBOLS=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+const REGIONS = IS_ZODIAC?[{name:'12星座',items:ZODIAC_NAMES}]:[
  ['北海道・東北','北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県'],
  ['関東','茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県'],
  ['中部','新潟県 富山県 石川県 福井県 山梨県 長野県 岐阜県 静岡県 愛知県'],
@@ -9,13 +12,15 @@ const REGIONS = [
  ['九州・沖縄','福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県']
 ].map(([name,items])=>({name,items:items.split(' ')}));
 const PREFECTURES=REGIONS.flatMap(r=>r.items);
+const TOTAL=PREFECTURES.length,ITEM_LABEL=IS_ZODIAC?'星座':'都道府県',PROJECT_TITLE=IS_ZODIAC?'12星座耐久':'都道府県耐久';
+const STORAGE_KEY=IS_ZODIAC?'endurance-zodiac-v1':'endurance-board-v3';
 const THEMES={mint:['#075c40','#e9f5ed','#fcfefb'],blue:['#1256a0','#e8f2fc','#fcfdff'],pink:['#a32258','#fcebf2','#fffcfd'],purple:['#6732a0','#f0eafa','#fdfcff'],orange:['#9b460d','#fcf0df','#fffefb']};
 const $=id=>document.getElementById(id);
-const defaults={theme:'mint',size:'portrait',layout:'map',transparent:false,target:1,condition:'入室',conditionImage:'',successAction:'',failureAction:'',rescueEnabled:false,rescueGift:'',rescueImage:'',obstacleEnabled:false,obstacleGift:'',obstacleImage:'',counts:{}};
+const defaults={theme:IS_ZODIAC?'purple':'mint',size:'portrait',layout:'map',transparent:false,target:1,condition:'入室',conditionImage:'',successAction:'',failureAction:'',rescueEnabled:false,rescueGift:'',rescueImage:'',obstacleEnabled:false,obstacleGift:'',obstacleImage:'',counts:{}};
 let state={...defaults,counts:{}};
 const validCount=value=>Number.isSafeInteger(Number(value))&&Number(value)>=0&&Number(value)<=99999;
 try{
- const saved=JSON.parse(localStorage.getItem('endurance-board-v3')||localStorage.getItem('endurance-board-v2')||localStorage.getItem('endurance-board-v1'));
+ const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||(!IS_ZODIAC&&(localStorage.getItem('endurance-board-v2')||localStorage.getItem('endurance-board-v1')))||'null');
  if(saved&&typeof saved==='object'){
   if(THEMES[saved.theme])state.theme=saved.theme;
   if(saved.version>=2&&['landscape','square','portrait'].includes(saved.size))state.size=saved.size;
@@ -43,8 +48,8 @@ for(const kind of ['rescue','obstacle']){
  enabled.addEventListener('change',()=>{state[kind+'Enabled']=enabled.checked;$(kind+'-fields').hidden=!enabled.checked;update();});
  gift.addEventListener('input',()=>{state[kind+'Gift']=gift.value;update();});
 }
-function giftRules(){const rules=[];if(state.rescueEnabled&&state.rescueGift.trim())rules.push({kind:'rescue',label:`救済ギフト：「${state.rescueGift.trim()}」で任意の都道府県を ＋1`,color:'#075c40'});if(state.obstacleEnabled&&state.obstacleGift.trim())rules.push({kind:'obstacle',label:`妨害ギフト：「${state.obstacleGift.trim()}」で任意の都道府県を −1`,color:'#a32238'});return rules;}
-function outcomeRules(){const rows=[];if(state.successAction.trim())rows.push({label:`47都道府県達成：${state.successAction.trim()}`,color:'#075c40'});if(state.failureAction.trim())rows.push({label:`47都道府県未達成：${state.failureAction.trim()}`,color:'#a32238'});return rows;}
+function giftRules(){const rules=[];if(state.rescueEnabled&&state.rescueGift.trim())rules.push({kind:'rescue',label:`救済ギフト：「${state.rescueGift.trim()}」で任意の${ITEM_LABEL}を ＋1`,color:'#075c40'});if(state.obstacleEnabled&&state.obstacleGift.trim())rules.push({kind:'obstacle',label:`妨害ギフト：「${state.obstacleGift.trim()}」で任意の${ITEM_LABEL}を −1`,color:'#a32238'});return rules;}
+function outcomeRules(){const rows=[];if(state.successAction.trim())rows.push({label:`${TOTAL}${ITEM_LABEL}達成：${state.successAction.trim()}`,color:'#075c40'});if(state.failureAction.trim())rows.push({label:`${TOTAL}${ITEM_LABEL}未達成：${state.failureAction.trim()}`,color:'#a32238'});return rows;}
 function giftRulesHeight(){const gifts=giftRules().length;return gifts?gifts*108+32:0;}
 function drawOutcomeHeader(x,y,width){outcomeRules().forEach((rule,i)=>{ctx.textAlign='left';text(rule.label,x,y+i*38,26,rule.color,'700',width);});}
 function drawGiftRules(w,h,margin){
@@ -116,8 +121,8 @@ function renderRegions(){
 }
 $('search').addEventListener('input',renderRegions);
 $('all').addEventListener('click',()=>{for(const name of PREFECTURES)state.counts[name]=Math.max(countOf(name),state.target);update();renderRegions();});
-$('clear').addEventListener('click',()=>{if(!window.confirm('達成状況をリセットしますか？\n47都道府県すべての人数が0になります。\nカウント条件や画像などの設定は保持されます。'))return;state.counts={};update();renderRegions();$('status').textContent='達成状況をリセットしました。';});
-function update(){selected=new Set(PREFECTURES.filter(name=>countOf(name)>=state.target));state.version=3;try{localStorage.setItem('endurance-board-v3',JSON.stringify(state));}catch{$('status').textContent='ブラウザーの保存領域を利用できません。画像の保存はできます。';}$('selected-count').textContent=`${selected.size} / 47`;draw();}
+$('clear').addEventListener('click',()=>{if(!window.confirm(`達成状況をリセットしますか？\n${TOTAL}${ITEM_LABEL}すべての人数が0になります。\nカウント条件や画像などの設定は保持されます。`))return;state.counts={};update();renderRegions();$('status').textContent='達成状況をリセットしました。';});
+function update(){selected=new Set(PREFECTURES.filter(name=>countOf(name)>=state.target));state.version=3;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{$('status').textContent='ブラウザーの保存領域を利用できません。画像の保存はできます。';}$('selected-count').textContent=`${selected.size} / ${TOTAL}`;draw();}
 const canvas=$('board');const ctx=canvas.getContext('2d');
 let cropSession=null;
 function clampCrop(session){const factor=session.base*session.zoom;const limitX=Math.max(0,(session.image.naturalWidth*factor-360)/2),limitY=Math.max(0,(session.image.naturalHeight*factor-360)/2);session.x=Math.max(-limitX,Math.min(limitX,session.x));session.y=Math.max(-limitY,Math.min(limitY,session.y));}
@@ -229,7 +234,7 @@ $('download').addEventListener('click',async()=>{
   outputUrl=URL.createObjectURL(blob);
   const now=new Date();
   const pad=value=>String(value).padStart(2,'0');
-  const filename=`都道府県耐久_${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+  const filename=`${PROJECT_TITLE}_${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
   outputFile=typeof File==='function'?new File([blob],filename,{type:'image/png'}):null;
   $('output-image').src=outputUrl;$('save-image').href=outputUrl;$('save-image').download=filename;
   let canShare=false;try{canShare=!!(outputFile&&navigator.share&&navigator.canShare?.({files:[outputFile]}));}catch{}
@@ -254,6 +259,7 @@ $('image-dialog').addEventListener('close',()=>{
 const mapHits=[];
 function draw(){
  mapHits.length=0;
+ if(IS_ZODIAC){drawZodiac();return;}
  if(state.layout==='list'){drawList();return;}
  const sizes={landscape:[1920,1080],square:[1600,1600],portrait:[1080,1920]};
  const [w,h]=sizes[state.size];canvas.width=w;canvas.height=h;
@@ -279,6 +285,27 @@ function draw(){
  ctx.textAlign='left';
  drawGiftRules(w,h,state.size==='portrait'?60:80);$('dimensions').textContent=`${w} × ${h} px`;
 }
+function drawZodiac(){
+ const [w,h]={portrait:[1080,1920],square:[1600,1600],landscape:[1920,1080]}[state.size];canvas.width=w;canvas.height=h;
+ const [accent,pale,bg]=THEMES[state.theme],m=60,wide=state.size==='landscape',simple=state.layout==='list';
+ ctx.clearRect(0,0,w,h);if(!state.transparent){ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);}
+ ctx.textAlign='left';text(PROJECT_TITLE,m,72,38,accent,'700');drawOutcomeHeader(m,124,w-m*2);
+ const conditionY=145+outcomeRules().length*38;drawCondition(m,conditionY,28,w-m*2);
+ text(`各星座達成条件：各星座 ${state.target} 人`,m,conditionY+48,26,'#334155','500',w-m*2);
+ text(`${selected.size}`,m,315,64,accent,'800');text('/ 12 星座 達成',m+100,320,26,'#334155');ctx.textAlign='right';text(selected.size===12?'12星座コンプリート！':`あと ${12-selected.size} 星座`,w-m,320,28,accent,'700');ctx.textAlign='left';
+ rounded(m,365,w-m*2,10,5,pale);if(selected.size)rounded(m,365,(w-m*2)*selected.size/12,10,5,accent);
+ const cols=wide?6:state.size==='square'?4:3,rows=12/cols,gap=18,startY=410,bottom=h-Math.max(50,giftRulesHeight()+24),cw=(w-m*2-gap*(cols-1))/cols,ch=(bottom-startY-gap*(rows-1))/rows;
+ ZODIAC_NAMES.forEach((name,i)=>{
+  const x=m+(i%cols)*(cw+gap),y=startY+Math.floor(i/cols)*(ch+gap),done=selected.has(name);
+  rounded(x,y,cw,ch,18,done?accent:'#ffffff',done?null:'#8998a7');mapHits.push({name,rect:{x,y,w:cw,h:ch}});
+  ctx.textAlign='center';const fg=done?'#ffffff':'#334155';
+  if(!simple){text(ZODIAC_SYMBOLS[i],x+cw/2,y+ch*.24,Math.min(76,ch*.25),done?'#ffffff':accent,'700',cw-24);}
+  text((done?'✓ ':'')+name,x+cw/2,y+ch*(simple?.35:.51),Math.min(32,ch*.15),fg,'700',cw-18);
+  text(`${countOf(name)} / ${state.target} 人`,x+cw/2,y+ch*(simple?.65:.72),Math.min(26,ch*.13),fg,'700',cw-18);
+  const barY=y+ch*.88;rounded(x+18,barY,cw-36,6,3,done?'#ffffff55':pale);const rate=Math.min(1,countOf(name)/state.target);if(rate)rounded(x+18,barY,(cw-36)*rate,6,3,done?'#ffffff':accent);
+ });
+ ctx.textAlign='left';drawGiftRules(w,h,m);$('dimensions').textContent=`${w} × ${h} px`;
+}
 function drawMap(box,accent,pale){
  const scale=Math.min(box.w/740,box.h/810);const ox=box.x+(box.w-740*scale)/2,oy=box.y+(box.h-810*scale)/2;
  for(const pref of JAPAN_MAP){const path=new Path2D();for(const ring of pref.rings){ring.forEach(([x,y],i)=>i?path.lineTo(ox+x*scale,oy+y*scale):path.moveTo(ox+x*scale,oy+y*scale));path.closePath();}ctx.fillStyle=selected.has(pref.name)?accent:'#acb9c7';ctx.fill(path);ctx.strokeStyle='#ffffff';ctx.lineWidth=Math.max(1.5,2.4*scale);ctx.stroke(path);mapHits.push({name:pref.name,path});}
@@ -289,6 +316,6 @@ function drawMap(box,accent,pale){
 }
 function hitAt(event){const rect=canvas.getBoundingClientRect();const x=(event.clientX-rect.left)*canvas.width/rect.width,y=(event.clientY-rect.top)*canvas.height/rect.height;return [...mapHits].reverse().find(hit=>hit.rect?x>=hit.rect.x&&x<=hit.rect.x+hit.rect.w&&y>=hit.rect.y&&y<=hit.rect.y+hit.rect.h:ctx.isPointInPath(hit.path,x,y));}
 canvas.addEventListener('click',event=>{const hit=hitAt(event);if(!hit)return;changeCount(hit.name,Math.min(99999,countOf(hit.name)+1));$('status').textContent=`${hit.name}：${countOf(hit.name)} / ${state.target} 人${selected.has(hit.name)?'（達成）':''}`;});
-canvas.addEventListener('mousemove',event=>{const hit=hitAt(event);canvas.style.cursor=hit?'pointer':'default';canvas.title=hit?`${hit.name}：${countOf(hit.name)} / ${state.target} 人（クリックで＋1人）`:'地図または県名をタップして＋1人';});
+canvas.addEventListener('mousemove',event=>{const hit=hitAt(event);canvas.style.cursor=hit?'pointer':'default';canvas.title=hit?`${hit.name}：${countOf(hit.name)} / ${state.target} 人（クリックで＋1人）`:IS_ZODIAC?'星座カードをタップして＋1人':'地図または県名をタップして＋1人';});
 renderRegions();update();loadSavedConditionImage();loadGiftImages();
 if(document.fonts)document.fonts.ready.then(draw);
