@@ -1,12 +1,18 @@
 'use strict';
 const IS_ZODIAC=document.body?.dataset?.project==='zodiac';
 const IS_ETO=document.body?.dataset?.project==='eto';
-const IS_CYCLE=IS_ZODIAC||IS_ETO;
+const IS_MONTH=document.body?.dataset?.project==='month';
+const IS_MBTI=document.body?.dataset?.project==='mbti';
+const IS_CYCLE=IS_ZODIAC||IS_ETO||IS_MONTH||IS_MBTI;
 const ZODIAC_NAMES=['おひつじ座','おうし座','ふたご座','かに座','しし座','おとめ座','てんびん座','さそり座','いて座','やぎ座','みずがめ座','うお座'];
 const ZODIAC_SYMBOLS=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
 const ETO_NAMES=['子（ねずみ）','丑（うし）','寅（とら）','卯（うさぎ）','辰（たつ）','巳（へび）','午（うま）','未（ひつじ）','申（さる）','酉（とり）','戌（いぬ）','亥（いのしし）'];
 const ETO_SYMBOLS=['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵','🐔','🐶','🐗'];
-const CYCLE_NAMES=IS_ETO?ETO_NAMES:ZODIAC_NAMES,CYCLE_SYMBOLS=IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS,CYCLE_TITLE=IS_ETO?'十二支':'12星座';
+const MONTH_NAMES=Array.from({length:12},(_,i)=>`${i+1}月`);
+const MBTI_NAMES=['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+const CYCLE_NAMES=IS_MBTI?MBTI_NAMES:IS_MONTH?MONTH_NAMES:IS_ETO?ETO_NAMES:ZODIAC_NAMES;
+const CYCLE_SYMBOLS=IS_MBTI?['NT','NT','NT','NT','NF','NF','NF','NF','SJ','SJ','SJ','SJ','SP','SP','SP','SP']:IS_MONTH?MONTH_NAMES.map((_,i)=>String(i+1).padStart(2,'0')):IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS;
+const CYCLE_TITLE=IS_MBTI?'16タイプ':IS_MONTH?'12か月':IS_ETO?'十二支':'12星座';
 const REGIONS = IS_CYCLE?[{name:CYCLE_TITLE,items:CYCLE_NAMES}]:[
  ['北海道・東北','北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県'],
  ['関東','茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県'],
@@ -17,11 +23,11 @@ const REGIONS = IS_CYCLE?[{name:CYCLE_TITLE,items:CYCLE_NAMES}]:[
  ['九州・沖縄','福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県']
 ].map(([name,items])=>({name,items:items.split(' ')}));
 const PREFECTURES=REGIONS.flatMap(r=>r.items);
-const TOTAL=PREFECTURES.length,ITEM_LABEL=IS_ETO?'干支':IS_ZODIAC?'星座':'都道府県',PROJECT_TITLE=IS_ETO?'干支耐久':IS_ZODIAC?'12星座耐久':'都道府県耐久';
-const STORAGE_KEY=IS_ETO?'endurance-eto-v1':IS_ZODIAC?'endurance-zodiac-v1':'endurance-board-v3';
+const TOTAL=PREFECTURES.length,ITEM_LABEL=IS_MBTI?'タイプ':IS_MONTH?'誕生月':IS_ETO?'干支':IS_ZODIAC?'星座':'都道府県',PROJECT_TITLE=IS_MBTI?'MBTI耐久':IS_MONTH?'誕生月耐久':IS_ETO?'干支耐久':IS_ZODIAC?'12星座耐久':'都道府県耐久';
+const STORAGE_KEY=IS_MBTI?'endurance-mbti-v1':IS_MONTH?'endurance-month-v1':IS_ETO?'endurance-eto-v1':IS_ZODIAC?'endurance-zodiac-v1':'endurance-board-v3';
 const THEMES={mint:['#075c40','#e9f5ed','#fcfefb'],blue:['#1256a0','#e8f2fc','#fcfdff'],pink:['#a32258','#fcebf2','#fffcfd'],purple:['#6732a0','#f0eafa','#fdfcff'],orange:['#9b460d','#fcf0df','#fffefb']};
 const $=id=>document.getElementById(id);
-const defaults={theme:IS_ETO?'orange':IS_ZODIAC?'purple':'mint',size:'portrait',layout:'map',transparent:false,target:1,condition:'入室',conditionImage:'',successAction:'',failureAction:'',rescueEnabled:false,rescueGift:'',rescueImage:'',obstacleEnabled:false,obstacleGift:'',obstacleImage:'',counts:{}};
+const defaults={theme:IS_MBTI?'blue':IS_MONTH?'pink':IS_ETO?'orange':IS_ZODIAC?'purple':'mint',size:'portrait',layout:'map',transparent:false,target:1,condition:'入室',conditionImage:'',successAction:'',failureAction:'',rescueEnabled:false,rescueGift:'',rescueImage:'',obstacleEnabled:false,obstacleGift:'',obstacleImage:'',counts:{}};
 let state={...defaults,counts:{}};
 const validCount=value=>Number.isSafeInteger(Number(value))&&Number(value)>=0&&Number(value)<=99999;
 try{
@@ -294,14 +300,14 @@ function drawZodiacWheel(cx,cy,r,accent,pale){
  const inner=r*.42;
  ctx.save();ctx.beginPath();ctx.arc(cx,cy,r+7,0,Math.PI*2);ctx.strokeStyle=accent;ctx.lineWidth=2;ctx.stroke();
  CYCLE_NAMES.forEach((name,i)=>{
-  const start=-Math.PI/2+i*Math.PI/6,end=start+Math.PI/6,angle=(start+end)/2,done=selected.has(name);
+  const start=-Math.PI/2+i*Math.PI*2/TOTAL,end=start+Math.PI*2/TOTAL,angle=(start+end)/2,done=selected.has(name);
   const path=new Path2D();path.arc(cx,cy,r,start+.008,end-.008);path.arc(cx,cy,inner,end-.008,start+.008,true);path.closePath();
   ctx.fillStyle=done?accent:i%2===0?pale:'#ffffff';ctx.fill(path);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke(path);mapHits.push({name,path});
   const x=cx+Math.cos(angle)*r*.72,y=cy+Math.sin(angle)*r*.72;
   ctx.textAlign='center';text(CYCLE_SYMBOLS[i],x,y-r*.045,Math.max(23,r*.13),done?'#ffffff':accent,'700');
   text((done?'✓ ':'')+name,x,y+r*.09,Math.max(11,r*.047),done?'#ffffff':'#334155','700',r*.38);
  });
- ctx.textAlign='center';text(CYCLE_TITLE,cx,cy-r*.08,r*.12,accent,'700');text(`${selected.size} / 12`,cx,cy+r*.09,r*.15,accent,'800');
+ ctx.textAlign='center';text(CYCLE_TITLE,cx,cy-r*.08,r*.12,accent,'700');text(`${selected.size} / ${TOTAL}`,cx,cy+r*.09,r*.15,accent,'800');
  ctx.beginPath();ctx.arc(cx,cy,inner*.88,0,Math.PI*2);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke();ctx.restore();ctx.textAlign='left';
 }
 function drawZodiac(){
@@ -311,23 +317,24 @@ function drawZodiac(){
  ctx.textAlign='left';text(PROJECT_TITLE,m,72,38,accent,'700');drawOutcomeHeader(m,124,w-m*2);
  const conditionY=145+outcomeRules().length*38;drawCondition(m,conditionY,28,w-m*2);
  text(`各${ITEM_LABEL}達成条件：各${ITEM_LABEL} ${state.target} 人`,m,conditionY+48,26,'#334155','500',w-m*2);
- text(`${selected.size}`,m,315,64,accent,'800');text(`/ 12 ${ITEM_LABEL} 達成`,m+100,320,26,'#334155');ctx.textAlign='right';text(selected.size===12?`${CYCLE_TITLE}コンプリート！`:`あと ${12-selected.size} ${ITEM_LABEL}`,w-m,320,28,accent,'700');ctx.textAlign='left';
- rounded(m,365,w-m*2,10,5,pale);if(selected.size)rounded(m,365,(w-m*2)*selected.size/12,10,5,accent);
+ text(`${selected.size}`,m,315,64,accent,'800');text(`/ ${TOTAL} ${ITEM_LABEL} 達成`,m+100,320,26,'#334155');ctx.textAlign='right';text(selected.size===TOTAL?`${CYCLE_TITLE}コンプリート！`:`あと ${TOTAL-selected.size} ${ITEM_LABEL}`,w-m,320,28,accent,'700');ctx.textAlign='left';
+ rounded(m,365,w-m*2,10,5,pale);if(selected.size)rounded(m,365,(w-m*2)*selected.size/TOTAL,10,5,accent);
  const bottom=h-Math.max(50,giftRulesHeight()+24),available=bottom-410;
  let gridX=m,gridW=w-m*2,startY=410;
- if(!simple){
+ if(!simple&&!IS_MBTI){
   const diameter=wide?Math.min(available-16,760):Math.min(760,available*.60);
   const cx=wide?m+460:w/2,cy=410+diameter/2;
   drawZodiacWheel(cx,cy,diameter/2,accent,pale);
   if(wide){gridX=1030;gridW=w-gridX-m;}else startY=410+diameter+28;
  }
- const cols=wide?(simple?6:3):state.size==='square'?4:3,rows=12/cols,gap=14,cw=(gridW-gap*(cols-1))/cols,ch=(bottom-startY-gap*(rows-1))/rows;
+ const cols=IS_MBTI?(wide?8:4):wide?(simple?6:3):state.size==='square'?4:3,rows=Math.ceil(TOTAL/cols),gap=14,cw=(gridW-gap*(cols-1))/cols,ch=(bottom-startY-gap*(rows-1))/rows;
  CYCLE_NAMES.forEach((name,i)=>{
   const x=gridX+(i%cols)*(cw+gap),y=startY+Math.floor(i/cols)*(ch+gap),done=selected.has(name);
-  rounded(x,y,cw,ch,18,done?accent:'#ffffff',done?null:'#8998a7');mapHits.push({name,rect:{x,y,w:cw,h:ch}});
+  const itemAccent=IS_MBTI?['#6732a0','#075c40','#1256a0','#9b460d'][Math.floor(i/4)]:accent;
+  rounded(x,y,cw,ch,18,done?itemAccent:'#ffffff',done?null:IS_MBTI?itemAccent:'#8998a7');mapHits.push({name,rect:{x,y,w:cw,h:ch}});
   ctx.textAlign='center';const fg=done?'#ffffff':'#334155';
-  if(simple||ch>150){text(CYCLE_SYMBOLS[i],x+cw/2,y+ch*.22,Math.min(54,ch*.24),done?'#ffffff':accent,'700',cw-24);}
-  text((done?'✓ ':'')+name,x+cw/2,y+ch*(simple||ch>150?.50:.32),Math.min(30,ch*.26),fg,'700',cw-18);
+  if(simple||IS_MBTI||ch>150){text(CYCLE_SYMBOLS[i],x+cw/2,y+ch*.22,Math.min(54,ch*.24),done?'#ffffff':itemAccent,'700',cw-24);}
+  text((done?'✓ ':'')+name,x+cw/2,y+ch*(simple||IS_MBTI||ch>150?.50:.32),Math.min(30,ch*.26),fg,'700',cw-18);
   text(`${countOf(name)} / ${state.target} 人`,x+cw/2,y+ch*.68,Math.min(24,ch*.22),fg,'700',cw-18);
   const barY=y+ch*.88;rounded(x+18,barY,cw-36,6,3,done?'#ffffff55':pale);const rate=Math.min(1,countOf(name)/state.target);if(rate)rounded(x+18,barY,(cw-36)*rate,6,3,done?'#ffffff':accent);
  });

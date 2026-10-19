@@ -30,3 +30,5 @@ main{padding-top:20px}.projects{margin-top:8px}
 .crop-frame{position:relative;margin:8px 0 20px;border:2px solid #075c40;background:#dce4de}
 
 a.project{text-decoration:none;color:#526a5c}a.project:hover{border-color:#619c82;background:#f0f7f2}a.project.active{color:#246a53}
+
+.projects{flex-wrap:wrap}@media(max-width:720px){.project{flex:0 1 auto;min-width:calc(33.333% - 5px)}}
