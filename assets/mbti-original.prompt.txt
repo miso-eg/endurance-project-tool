@@ -1,0 +1,10 @@
+Use case: illustration-story
+Asset type: one original 4-by-4 transparent illustration sprite atlas for the MBTI livestream counter website.
+Style: consistent cute hand-drawn chibi human characters, full body, rounded ink outlines, soft vivid pastel colors, original designs. Not emoji; no branded MBTI/16Personalities characters.
+Composition: exactly four equal rows and four equal columns; each figure centered entirely within its cell, with transparent padding; no text, captions, grid lines, watermark or background.
+Row-major subjects:
+INTJ thoughtful strategist holding a chessboard; INTP curious researcher with flask; ENTJ confident team captain with flag; ENTP inventive tinkerer with glowing idea gadget.
+INFJ kind guide with lantern; INFP dreamy poet with journal and flower; ENFJ encouraging mentor with small star; ENFP joyful explorer with backpack.
+ISTJ meticulous archivist with checklist; ISFJ caring gardener with watering can; ESTJ organizer with clipboard and rolled plan; ESFJ welcoming host with tea tray.
+ISTP practical maker with wrench; ISFP expressive painter with palette; ESTP lively adventurer with skateboard; ESFP cheerful performer with microphone.
+Generation: built-in image_gen, transparent_background=true.

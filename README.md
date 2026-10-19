@@ -77,3 +77,5 @@
 ## 誕生月・MBTI耐久
 
 `month.html` は1〜12月の誕生月耐久、`mbti.html` はINTJ・INTP・ENTJ・ENTP・INFJ・INFP・ENFJ・ENFP・ISTJ・ISFJ・ESTJ・ESFJ・ISTP・ISFP・ESTP・ESFPの16タイプ耐久です。誕生月は円形図と一覧、MBTIはカード一覧で表示します。人数記録・条件設定・画像設定・救済と妨害・画像保存と共有に対応し、設定は各企画で独立して保存します。MBTIページは申告されたタイプを記録するもので、診断機能はありません。
+
+MBTIの各タイプには内蔵ImageGenで生成したオリジナルキャラクターを表示します。`assets/mbti-original.png` は4×4の背景透過スプライトシートで、タイプ順に切り出してCanvas上に描画します。制作プロンプトは `assets/mbti-original.prompt.txt` に記録しています。画像はイメージ表現です。

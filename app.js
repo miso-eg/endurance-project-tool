@@ -11,7 +11,7 @@ const ETO_SYMBOLS=['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵
 const MONTH_NAMES=Array.from({length:12},(_,i)=>`${i+1}月`);
 const MBTI_NAMES=['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
 const CYCLE_NAMES=IS_MBTI?MBTI_NAMES:IS_MONTH?MONTH_NAMES:IS_ETO?ETO_NAMES:ZODIAC_NAMES;
-const CYCLE_SYMBOLS=IS_MBTI?['♟️','🔬','👑','💡','🔮','🌼','📣','🎉','📋','🩺','🧭','🤝','🛠️','🎨','🚀','🎤']:IS_MONTH?['🎍','🍫','🎎','🌸','🎏','☔','🎋','🎆','🌕','🎃','🍁','🎄']:IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS;
+const CYCLE_SYMBOLS=IS_MBTI?MBTI_NAMES.map(()=> ''):IS_MONTH?['🎍','🍫','🎎','🌸','🎏','☔','🎋','🎆','🌕','🎃','🍁','🎄']:IS_ETO?ETO_SYMBOLS:ZODIAC_SYMBOLS;
 const CYCLE_TITLE=IS_MBTI?'16タイプ':IS_MONTH?'12か月':IS_ETO?'十二支':'12星座';
 const REGIONS = IS_CYCLE?[{name:CYCLE_TITLE,items:CYCLE_NAMES}]:[
  ['北海道・東北','北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県'],
@@ -310,6 +310,9 @@ function drawZodiacWheel(cx,cy,r,accent,pale){
  ctx.textAlign='center';text(CYCLE_TITLE,cx,cy-r*.08,r*.12,accent,'700');text(`${selected.size} / ${TOTAL}`,cx,cy+r*.09,r*.15,accent,'800');
  ctx.beginPath();ctx.arc(cx,cy,inner*.88,0,Math.PI*2);ctx.strokeStyle=accent;ctx.lineWidth=1;ctx.stroke();ctx.restore();ctx.textAlign='left';
 }
+let mbtiArt=null;
+function loadMbtiArt(){if(!IS_MBTI)return;const img=new Image();img.onload=()=>{mbtiArt=img;draw();};img.onerror=()=>{$('status').textContent='イラストを読み込めませんでした。ページを再読み込みしてください。';};img.src='./assets/mbti-original.png';}
+function drawMbtiArt(index,x,y,size){if(!mbtiArt)return;const sw=mbtiArt.naturalWidth/4,sh=mbtiArt.naturalHeight/4;ctx.drawImage(mbtiArt,(index%4)*sw,Math.floor(index/4)*sh,sw,sh,x-size/2,y-size/2,size,size);}
 function drawZodiac(){
  const [w,h]={portrait:[1080,1920],square:[1600,1600],landscape:[1920,1080]}[state.size];canvas.width=w;canvas.height=h;
  const [accent,pale,bg]=THEMES[state.theme],m=60,wide=state.size==='landscape',simple=state.layout==='list';
@@ -333,9 +336,10 @@ function drawZodiac(){
   const itemAccent=IS_MBTI?['#6732a0','#075c40','#1256a0','#9b460d'][Math.floor(i/4)]:accent;
   rounded(x,y,cw,ch,18,done?itemAccent:'#ffffff',done?null:IS_MBTI?itemAccent:'#8998a7');mapHits.push({name,rect:{x,y,w:cw,h:ch}});
   ctx.textAlign='center';const fg=done?'#ffffff':'#334155';
-  if(simple||IS_MBTI||IS_MONTH||ch>150){text(CYCLE_SYMBOLS[i],x+cw/2,y+ch*.22,Math.min(54,ch*.24),done?'#ffffff':itemAccent,'700',cw-24);}
-  text((done?'✓ ':'')+name,x+cw/2,y+ch*(simple||IS_MBTI||IS_MONTH||ch>150?.50:.32),Math.min(30,ch*.26),fg,'700',cw-18);
-  text(`${countOf(name)} / ${state.target} 人`,x+cw/2,y+ch*.68,Math.min(24,ch*.22),fg,'700',cw-18);
+  if(IS_MBTI){const artSize=Math.min(cw-24,ch*.54);if(done)rounded(x+(cw-artSize)/2,y+6,artSize,artSize,12,'#ffffff',null);drawMbtiArt(i,x+cw/2,y+6+artSize/2,artSize);}
+  else if(simple||IS_MONTH||ch>150){text(CYCLE_SYMBOLS[i],x+cw/2,y+ch*.22,Math.min(54,ch*.24),done?'#ffffff':itemAccent,'700',cw-24);}
+  text((done?'✓ ':'')+name,x+cw/2,y+ch*(IS_MBTI?.61:simple||IS_MONTH||ch>150?.50:.32),Math.min(30,ch*.26),fg,'700',cw-18);
+  text(`${countOf(name)} / ${state.target} 人`,x+cw/2,y+ch*(IS_MBTI?.77:.68),Math.min(24,ch*.22),fg,'700',cw-18);
   const barY=y+ch*.88;rounded(x+18,barY,cw-36,6,3,done?'#ffffff55':pale);const rate=Math.min(1,countOf(name)/state.target);if(rate)rounded(x+18,barY,(cw-36)*rate,6,3,done?'#ffffff':accent);
  });
  ctx.textAlign='left';drawGiftRules(w,h,m);$('dimensions').textContent=`${w} × ${h} px`;
@@ -351,5 +355,5 @@ function drawMap(box,accent,pale){
 function hitAt(event){const rect=canvas.getBoundingClientRect();const x=(event.clientX-rect.left)*canvas.width/rect.width,y=(event.clientY-rect.top)*canvas.height/rect.height;return [...mapHits].reverse().find(hit=>hit.rect?x>=hit.rect.x&&x<=hit.rect.x+hit.rect.w&&y>=hit.rect.y&&y<=hit.rect.y+hit.rect.h:ctx.isPointInPath(hit.path,x,y));}
 canvas.addEventListener('click',event=>{const hit=hitAt(event);if(!hit)return;changeCount(hit.name,Math.min(99999,countOf(hit.name)+1));$('status').textContent=`${hit.name}：${countOf(hit.name)} / ${state.target} 人${selected.has(hit.name)?'（達成）':''}`;});
 canvas.addEventListener('mousemove',event=>{const hit=hitAt(event);canvas.style.cursor=hit?'pointer':'default';canvas.title=hit?`${hit.name}：${countOf(hit.name)} / ${state.target} 人（クリックで＋1人）`:IS_CYCLE?`${ITEM_LABEL}カードをタップして＋1人`:'地図または県名をタップして＋1人';});
-renderRegions();update();loadSavedConditionImage();loadGiftImages();
+renderRegions();update();loadSavedConditionImage();loadGiftImages();loadMbtiArt();
 if(document.fonts)document.fonts.ready.then(draw);
